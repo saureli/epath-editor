@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EPATH Editor</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">EUCLIDEAN PATH</p>
+        <h1>EPATH Editor</h1>
+        <p class="subtitle">Costruisci un path nel piano delle RMSD.</p>
+      </div>
+      <button id="resetBtn" class="secondary-btn" type="button">Ripristina</button>
+    </header>
+
+    <section class="workspace">
+      <aside class="panel">
+        <div class="control-group">
+          <label for="referenceRmsd">
+            RMSD tra le due strutture di riferimento (Å)
+          </label>
+          <input id="referenceRmsd" type="number" min="0.1" max="100" step="0.1" value="8.0">
+          <p class="hint">Determina i due estremi: (0, R) e (R, 0).</p>
+        </div>
+
+        <div class="control-group">
+          <label for="milestones">
+            Numero di milestones
+            <span id="milestonesValue" class="value-badge">8</span>
+          </label>
+          <input id="milestones" type="range" min="2" max="50" step="1" value="8">
+          <div class="range-labels"><span>2</span><span>50</span></div>
+        </div>
+
+        <div class="control-group">
+          <label for="curvature">
+            Curvatura
+            <span id="curvatureValue" class="value-badge">0.00</span>
+          </label>
+          <input id="curvature" type="range" min="-1" max="1" step="0.01" value="0">
+          <div class="range-labels"><span>sotto</span><span>retta</span><span>sopra</span></div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="info-card">
+          <div class="info-row"><span>M<sub>1</sub></span><code id="startPoint">(0.00, 8.00)</code></div>
+          <div class="info-row"><span>M<sub>N</sub></span><code id="endPoint">(8.00, 0.00)</code></div>
+          <div class="info-row"><span>Milestones</span><strong id="milestoneCount">8</strong></div>
+        </div>
+
+        <button id="downloadBtn" class="primary-btn" type="button">Esporta coordinate JSON</button>
+      </aside>
+
+      <section class="canvas-panel">
+        <div class="canvas-wrap">
+          <canvas id="pathCanvas" aria-label="Piano cartesiano con il path EPATH"></canvas>
+        </div>
+        <div class="legend">
+          <span><i class="dot endpoint"></i> estremi</span>
+          <span><i class="dot milestone"></i> milestones</span>
+          <span><i class="line"></i> path</span>
+          <span><i class="baseline"></i> diagonale di riferimento</span>
+        </div>
+      </section>
+    </section>
+  </main>
+  <script src="script.js"></script>
+</body>
+</html>
