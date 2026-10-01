@@ -35,7 +35,8 @@ input[type="range"] { width: 100%; accent-color: #202833; }
 .secondary-btn { background: #fff; border: 1px solid #cfd7e0; color: #202833; white-space: nowrap; }
 .primary-btn:hover, .secondary-btn:hover { transform: translateY(-1px); }
 
-.canvas-panel { min-width: 0; padding: 18px; }
+/* .canvas-panel { min-width: 0; padding: 18px; } */
+.canvas-panel { width: 520px; min-width: 0;  padding: 10px;  justify-self: start;}
 .canvas-wrap { position: relative; width: 100%; max-width: 500px; aspect-ratio: 1 / 1; margin: 0 auto; }
 #pathCanvas { display: block; width: 100%; height: 100%; touch-action: none; }
 .legend { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; margin-top: 8px; padding: 0 6px 2px; color: #687380; font-size: 12px; }
