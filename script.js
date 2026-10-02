@@ -214,3 +214,26 @@ resetBtn.addEventListener("click", reset);
 downloadBtn.addEventListener("click", downloadJSON);
 window.addEventListener("resize", resizeCanvas);
 requestAnimationFrame(resizeCanvas);
+
+// --- Milestone coordinates list ---
+
+const milestoneList = document.getElementById("milestoneList");
+
+function updateMilestoneList() {
+  if (!milestoneList) return;
+
+  const state = getState();
+  const points = generateMilestones(state);
+
+  milestoneList.innerHTML = points.map((point) => `
+    <div class="info-row">
+      <span>M<sub>${point.index}</sub></span>
+      <code>(${point.x.toFixed(2)}, ${point.y.toFixed(2)})</code>
+    </div>
+  `).join("");
+}
+
+updateMilestoneList();
+
+milestonesInput.addEventListener("input", updateMilestoneList);
+curvatureInput.addEventListener("input", updateMilestoneList);
