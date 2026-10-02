@@ -10,7 +10,6 @@ const curvatureValue = document.getElementById("curvatureValue");
 const startPoint = document.getElementById("startPoint");
 const endPoint = document.getElementById("endPoint");
 const milestoneCount = document.getElementById("milestoneCount");
-const milestoneList = document.getElementById("milestoneList");
 
 const resetBtn = document.getElementById("resetBtn");
 const downloadBtn = document.getElementById("downloadBtn");
@@ -180,16 +179,6 @@ function draw() {
   milestonesValue.textContent = String(state.milestones);
   curvatureValue.textContent = state.curvature.toFixed(2);
   milestoneCount.textContent = String(state.milestones);
-  
-  const points = generateMilestones(state);
-
-  milestoneList.innerHTML = points.map((point) => `
-    <div class="info-row">
-      <span>M<sub>${point.index}</sub></span>
-      <code>(${point.x.toFixed(2)}, ${point.y.toFixed(2)})</code>
-    </div>
-  `).join("");
-  
   startPoint.textContent = `(${points[0].x.toFixed(2)}, ${points[0].y.toFixed(2)})`;
   const last = points[points.length - 1];
   endPoint.textContent = `(${last.x.toFixed(2)}, ${last.y.toFixed(2)})`;
