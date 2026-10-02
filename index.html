@@ -61,6 +61,37 @@
           <input id="zContour" type="number" step="0.01" value="0.05">
         </div>
 
+        <div class="control-group">
+          <label for="inactivePdb">
+            Inactive reference PDB
+          </label>
+          <input
+            id="inactivePdb"
+            type="text"
+            value="inactive_state.pdb"
+          >
+        </div>
+
+        <div class="control-group">
+          <label for="activePdb">
+            Active reference PDB
+          </label>
+          <input
+            id="activePdb"
+            type="text"
+            value="active_state.pdb"
+          >
+        </div>
+
+        <div class="control-group">
+          <button
+            id="plumedBtn"
+            class="primary-btn"
+            type="button">
+            Export PLUMED file
+          </button>
+        </div>
+
         <div class="divider"></div>
 
         <div class="info-card">
