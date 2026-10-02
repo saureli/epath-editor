@@ -70,5 +70,26 @@
     </section>
   </main>
   <script src="script.js"></script>
+  <div id="coordinatesModal" class="modal hidden">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>Milestone coordinates</h2>
+      <button id="closeModalBtn" class="close-btn" type="button">&times;</button>
+    </div>
+
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Milestone</th>
+            <th>RMSD inactive</th>
+            <th>RMSD active</th>
+          </tr>
+        </thead>
+        <tbody id="coordinatesTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
 </body>
 </html>
