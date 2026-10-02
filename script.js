@@ -276,3 +276,494 @@ updateMilestoneList();
 
 milestonesInput.addEventListener("input", updateMilestoneList);
 curvatureInput.addEventListener("input", updateMilestoneList);
+
+// =====================================================
+// Z(M) CONTOUR
+// =====================================================
+
+const zLambdaInput = document.getElementById("lambda");
+const zContourInput = document.getElementById("zContour");
+
+const zLambdaValue = document.getElementById("lambdaValue");
+const zContourValue = document.getElementById("zContourValue");
+
+// Creiamo un secondo canvas trasparente sopra il canvas principale.
+// Servirà esclusivamente per disegnare l'isolinea.
+const zCanvas = document.createElement("canvas");
+
+zCanvas.id = "zContourCanvas";
+
+zCanvas.style.position = "absolute";
+zCanvas.style.left = "0";
+zCanvas.style.top = "0";
+zCanvas.style.width = "100%";
+zCanvas.style.height = "100%";
+zCanvas.style.pointerEvents = "none";
+zCanvas.style.zIndex = "2";
+
+// Il canvas principale rimane sotto l'isolinea ma sopra lo sfondo.
+canvas.style.position = "relative";
+canvas.style.zIndex = "1";
+
+canvas.parentElement.appendChild(zCanvas);
+
+const zCtx = zCanvas.getContext("2d");
+
+
+// -----------------------------------------------------
+// Calcolo numericamente stabile di z(M)
+// -----------------------------------------------------
+
+function calculateZ(x, y, points, lambda) {
+
+  if (lambda <= 0) {
+    return 0;
+  }
+
+  const logarithms = points.map((point) => {
+
+    const dx = x - point.x;
+    const dy = y - point.y;
+
+    const distanceSquared =
+      dx * dx +
+      dy * dy;
+
+    return -lambda * distanceSquared;
+  });
+
+  // Log-sum-exp per evitare problemi numerici
+  // quando lambda * d^2 diventa molto grande.
+  const maximum = Math.max(...logarithms);
+
+  const sum = logarithms.reduce(
+    (accumulator, value) =>
+      accumulator +
+      Math.exp(value - maximum),
+    0
+  );
+
+  const logSum =
+    maximum +
+    Math.log(sum);
+
+  return -logSum / lambda;
+}
+
+
+// -----------------------------------------------------
+// Ridimensionamento del canvas dell'isolinea
+// -----------------------------------------------------
+
+function resizeZCanvas() {
+
+  const rect =
+    canvas.getBoundingClientRect();
+
+  const dpr =
+    window.devicePixelRatio || 1;
+
+  zCanvas.width =
+    Math.max(
+      1,
+      Math.round(rect.width * dpr)
+    );
+
+  zCanvas.height =
+    Math.max(
+      1,
+      Math.round(rect.height * dpr)
+    );
+
+  zCtx.setTransform(
+    dpr,
+    0,
+    0,
+    dpr,
+    0,
+    0
+  );
+}
+
+
+// -----------------------------------------------------
+// Interpolazione tra due punti per trovare
+// dove la funzione attraversa il valore Z scelto.
+// -----------------------------------------------------
+
+function interpolateContourPoint(
+  p1,
+  z1,
+  p2,
+  z2,
+  target
+) {
+
+  if (z1 === z2) {
+    return {
+      x: (p1.x + p2.x) / 2,
+      y: (p1.y + p2.y) / 2
+    };
+  }
+
+  const fraction =
+    (target - z1) /
+    (z2 - z1);
+
+  return {
+    x:
+      p1.x +
+      fraction * (p2.x - p1.x),
+
+    y:
+      p1.y +
+      fraction * (p2.y - p1.y)
+  };
+}
+
+
+// -----------------------------------------------------
+// Disegna l'isolinea z(M) = valore scelto
+// -----------------------------------------------------
+
+function drawZContour() {
+
+  if (
+    !zLambdaInput ||
+    !zContourInput
+  ) {
+    return;
+  }
+
+  resizeZCanvas();
+
+  const state =
+    getState();
+
+  const points =
+    generateMilestones(state);
+
+  const lambda =
+    Number(zLambdaInput.value);
+
+  const targetZ =
+    Number(zContourInput.value);
+
+  zLambdaValue.textContent =
+    lambda.toFixed(2);
+
+  zContourValue.textContent =
+    targetZ.toFixed(2);
+
+  const {
+    width,
+    height
+  } = getCanvasSize();
+
+  if (
+    !width ||
+    !height ||
+    !Number.isFinite(lambda) ||
+    lambda <= 0 ||
+    !Number.isFinite(targetZ)
+  ) {
+    zCtx.clearRect(
+      0,
+      0,
+      width,
+      height
+    );
+
+    return;
+  }
+
+  zCtx.clearRect(
+    0,
+    0,
+    width,
+    height
+  );
+
+  const g =
+    geometry(state);
+
+  // Numero di celle della griglia.
+  // 70x70 è già abbastanza fluido
+  // per una prima versione.
+  const nx = 70;
+  const ny = 70;
+
+  const plotWidth =
+    g.width -
+    g.margin.left -
+    g.margin.right;
+
+  const plotHeight =
+    g.height -
+    g.margin.top -
+    g.margin.bottom;
+
+  const cellWidth =
+    plotWidth / nx;
+
+  const cellHeight =
+    plotHeight / ny;
+
+  // Trasforma un pixel del canvas
+  // nelle coordinate RMSD.
+  function canvasToRmsd(px, py) {
+
+    const x =
+      (px - g.margin.left) /
+      plotWidth *
+      g.maxAxis;
+
+    const y =
+      (g.height - g.margin.bottom - py) /
+      plotHeight *
+      g.maxAxis;
+
+    return { x, y };
+  }
+
+  // Calcoliamo z su tutti i vertici della griglia.
+  const values = [];
+
+  for (let j = 0; j <= ny; j += 1) {
+
+    values[j] = [];
+
+    for (let i = 0; i <= nx; i += 1) {
+
+      const px =
+        g.margin.left +
+        i * cellWidth;
+
+      const py =
+        g.margin.top +
+        j * cellHeight;
+
+      const rmsd =
+        canvasToRmsd(
+          px,
+          py
+        );
+
+      values[j][i] =
+        calculateZ(
+          rmsd.x,
+          rmsd.y,
+          points,
+          lambda
+        );
+    }
+  }
+
+  // Disegniamo tutti i piccoli segmenti
+  // in cui z attraversa targetZ.
+  zCtx.save();
+
+  zCtx.beginPath();
+
+  for (let j = 0; j < ny; j += 1) {
+
+    for (let i = 0; i < nx; i += 1) {
+
+      const px =
+        g.margin.left +
+        i * cellWidth;
+
+      const py =
+        g.margin.top +
+        j * cellHeight;
+
+      const p00 =
+        canvasToRmsd(
+          px,
+          py + cellHeight
+        );
+
+      const p10 =
+        canvasToRmsd(
+          px + cellWidth,
+          py + cellHeight
+        );
+
+      const p11 =
+        canvasToRmsd(
+          px + cellWidth,
+          py
+        );
+
+      const p01 =
+        canvasToRmsd(
+          px,
+          py
+        );
+
+      const z00 =
+        values[j + 1][i];
+
+      const z10 =
+        values[j + 1][i + 1];
+
+      const z11 =
+        values[j][i + 1];
+
+      const z01 =
+        values[j][i];
+
+      const intersections = [];
+
+      // Bottom
+      if (
+        (z00 < targetZ && z10 >= targetZ) ||
+        (z00 >= targetZ && z10 < targetZ)
+      ) {
+        intersections.push(
+          interpolateContourPoint(
+            p00,
+            z00,
+            p10,
+            z10,
+            targetZ
+          )
+        );
+      }
+
+      // Right
+      if (
+        (z10 < targetZ && z11 >= targetZ) ||
+        (z10 >= targetZ && z11 < targetZ)
+      ) {
+        intersections.push(
+          interpolateContourPoint(
+            p10,
+            z10,
+            p11,
+            z11,
+            targetZ
+          )
+        );
+      }
+
+      // Top
+      if (
+        (z11 < targetZ && z01 >= targetZ) ||
+        (z11 >= targetZ && z01 < targetZ)
+      ) {
+        intersections.push(
+          interpolateContourPoint(
+            p11,
+            z11,
+            p01,
+            z01,
+            targetZ
+          )
+        );
+      }
+
+      // Left
+      if (
+        (z01 < targetZ && z00 >= targetZ) ||
+        (z01 >= targetZ && z00 < targetZ)
+      ) {
+        intersections.push(
+          interpolateContourPoint(
+            p01,
+            z01,
+            p00,
+            z00,
+            targetZ
+          )
+        );
+      }
+
+      // Normalmente abbiamo due intersezioni.
+      // Nel caso ambiguo di quattro intersezioni,
+      // colleghiamo le due coppie.
+      if (intersections.length === 2) {
+
+        zCtx.moveTo(
+          g.sx(intersections[0].x),
+          g.sy(intersections[0].y)
+        );
+
+        zCtx.lineTo(
+          g.sx(intersections[1].x),
+          g.sy(intersections[1].y)
+        );
+
+      } else if (
+        intersections.length === 4
+      ) {
+
+        zCtx.moveTo(
+          g.sx(intersections[0].x),
+          g.sy(intersections[0].y)
+        );
+
+        zCtx.lineTo(
+          g.sx(intersections[1].x),
+          g.sy(intersections[1].y)
+        );
+
+        zCtx.moveTo(
+          g.sx(intersections[2].x),
+          g.sy(intersections[2].y)
+        );
+
+        zCtx.lineTo(
+          g.sx(intersections[3].x),
+          g.sy(intersections[3].y)
+        );
+      }
+    }
+  }
+
+  // Stile dell'isolinea
+  zCtx.strokeStyle =
+    "#c44a4a";
+
+  zCtx.lineWidth = 2;
+
+  zCtx.stroke();
+
+  zCtx.restore();
+}
+
+
+// -----------------------------------------------------
+// Aggiornamento automatico
+// -----------------------------------------------------
+
+zLambdaInput.addEventListener(
+  "input",
+  drawZContour
+);
+
+zContourInput.addEventListener(
+  "input",
+  drawZContour
+);
+
+milestonesInput.addEventListener(
+  "input",
+  drawZContour
+);
+
+curvatureInput.addEventListener(
+  "input",
+  drawZContour
+);
+
+window.addEventListener(
+  "resize",
+  drawZContour
+);
+
+
+// Prima visualizzazione
+requestAnimationFrame(
+  drawZContour
+);
