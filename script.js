@@ -184,21 +184,59 @@ function draw() {
   endPoint.textContent = `(${last.x.toFixed(2)}, ${last.y.toFixed(2)})`;
 }
 
-function downloadJSON() {
+//function downloadJSON() {
+//  const state = getState();
+//  const data = {
+//    version: 1,
+//    parameters: {
+//      reference_rmsd_angstrom: state.referenceRmsd,
+//      milestones: state.milestones,
+//      curvature: state.curvature
+//    },
+//    milestones: generateMilestones(state).map(p => ({ index: p.index, t: p.t, x: p.x, y: p.y }))
+//  };
+//  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+//  const url = URL.createObjectURL(blob);
+//  const a = document.createElement("a");
+//  a.href = url; a.download = "epath-milestones.json"; document.body.appendChild(a); a.click(); a.remove();
+//  URL.revokeObjectURL(url);
+//}
+
+function downloadEPATH() {
   const state = getState();
-  const data = {
-    version: 1,
-    parameters: {
-      reference_rmsd_angstrom: state.referenceRmsd,
-      milestones: state.milestones,
-      curvature: state.curvature
-    },
-    milestones: generateMilestones(state).map(p => ({ index: p.index, t: p.t, x: p.x, y: p.y }))
-  };
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+  const points = generateMilestones(state);
+
+  function formatCoordinate(value) {
+    return String(Number(value.toFixed(6)));
+  }
+
+  const lines = [];
+
+  points.forEach((point) => {
+    lines.push(
+      `REMARK ARG=r4,r3 r4=${formatCoordinate(point.x)}  r3=${formatCoordinate(point.y)}`
+    );
+    lines.push("END");
+  });
+
+  const content = lines.join("\n") + "\n";
+
+  const blob = new Blob(
+    [content],
+    { type: "text/plain" }
+  );
+
   const url = URL.createObjectURL(blob);
+
   const a = document.createElement("a");
-  a.href = url; a.download = "epath-milestones.json"; document.body.appendChild(a); a.click(); a.remove();
+
+  a.href = url;
+  a.download = "EPATH.pdb";
+
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+
   URL.revokeObjectURL(url);
 }
 
@@ -211,7 +249,8 @@ function reset() {
 
 [referenceRmsdInput, milestonesInput, curvatureInput].forEach(el => el.addEventListener("input", draw));
 resetBtn.addEventListener("click", reset);
-downloadBtn.addEventListener("click", downloadJSON);
+//downloadBtn.addEventListener("click", downloadJSON);
+downloadBtn.addEventListener("click", downloadEPATH);
 window.addEventListener("resize", resizeCanvas);
 requestAnimationFrame(resizeCanvas);
 
