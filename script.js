@@ -12,7 +12,10 @@ const endPoint = document.getElementById("endPoint");
 const milestoneCount = document.getElementById("milestoneCount");
 
 const resetBtn = document.getElementById("resetBtn");
-const downloadBtn = document.getElementById("downloadBtn");
+const showCoordinatesBtn = document.getElementById("showCoordinatesBtn");
+const coordinatesModal = document.getElementById("coordinatesModal");
+const closeModalBtn = document.getElementById("closeModalBtn");
+const coordinatesTableBody = document.getElementById("coordinatesTableBody");
 
 const defaults = { referenceRmsd: 8.0, milestones: 8, curvature: 0.0 };
 
@@ -184,24 +187,6 @@ function draw() {
   endPoint.textContent = `(${last.x.toFixed(2)}, ${last.y.toFixed(2)})`;
 }
 
-function downloadJSON() {
-  const state = getState();
-  const data = {
-    version: 1,
-    parameters: {
-      reference_rmsd_angstrom: state.referenceRmsd,
-      milestones: state.milestones,
-      curvature: state.curvature
-    },
-    milestones: generateMilestones(state).map(p => ({ index: p.index, t: p.t, x: p.x, y: p.y }))
-  };
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url; a.download = "epath-milestones.json"; document.body.appendChild(a); a.click(); a.remove();
-  URL.revokeObjectURL(url);
-}
-
 function reset() {
   referenceRmsdInput.value = defaults.referenceRmsd;
   milestonesInput.value = defaults.milestones;
@@ -211,6 +196,34 @@ function reset() {
 
 [referenceRmsdInput, milestonesInput, curvatureInput].forEach(el => el.addEventListener("input", draw));
 resetBtn.addEventListener("click", reset);
-downloadBtn.addEventListener("click", downloadJSON);
+
+function showCoordinates() {
+  const state = getState();
+  const points = generateMilestones(state);
+
+  coordinatesTableBody.innerHTML = points.map((point) => `
+    <tr>
+      <td>M${point.index}</td>
+      <td>${point.x.toFixed(4)}</td>
+      <td>${point.y.toFixed(4)}</td>
+    </tr>
+  `).join("");
+
+  coordinatesModal.classList.remove("hidden");
+}
+
+function closeCoordinates() {
+  coordinatesModal.classList.add("hidden");
+}
+
+showCoordinatesBtn.addEventListener("click", showCoordinates);
+closeModalBtn.addEventListener("click", closeCoordinates);
+
+coordinatesModal.addEventListener("click", (event) => {
+  if (event.target === coordinatesModal) {
+    closeCoordinates();
+  }
+});
+
 window.addEventListener("resize", resizeCanvas);
 requestAnimationFrame(resizeCanvas);
