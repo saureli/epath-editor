@@ -927,3 +927,186 @@ if (groFileInput && groStatus) {
     }
   });
 }
+
+// =====================================================
+// EPATH PROTEIN SEQUENCE EXTRACTION
+// =====================================================
+
+const epathProteinSummaryElement =
+  document.getElementById("proteinSummary");
+
+const epathProteinSequenceElement =
+  document.getElementById("proteinSequence");
+
+// Conversione dei residui in codice a una lettera
+const EPATH_GRO_AMINO_ACIDS = {
+  ALA: "A",
+  ARG: "R",
+  ASN: "N",
+  ASP: "D",
+  CYS: "C",
+  GLN: "Q",
+  GLU: "E",
+  GLY: "G",
+  HIS: "H",
+  ILE: "I",
+  LEU: "L",
+  LYS: "K",
+  MET: "M",
+  PHE: "F",
+  PRO: "P",
+  SER: "S",
+  THR: "T",
+  TRP: "W",
+  TYR: "Y",
+  VAL: "V",
+
+  // Varianti e residui modificati comuni
+  HID: "H",
+  HIE: "H",
+  HIP: "H",
+  HSD: "H",
+  HSE: "H",
+  HSP: "H",
+  ASH: "D",
+  GLH: "E",
+  CYM: "C",
+  CYX: "C",
+  CYS2: "C",
+  LYN: "K",
+  MSE: "M",
+  HYP: "P",
+  SEP: "S",
+  TPO: "T",
+  PTR: "Y",
+  SEC: "U"
+};
+
+// Rappresentazione proteica
+let epathProteinResidues = [];
+let epathProteinSegments = [];
+let epathProteinSequence = "";
+
+
+function buildEPATHProteinRepresentation(atoms) {
+
+  const residues = [];
+  const segments = [];
+
+  let currentResidue = null;
+  let currentSegmentResidues = [];
+
+  function finishCurrentResidue() {
+
+    if (!currentResidue) return;
+
+    const residue = {
+      ...currentResidue,
+      sequencePosition: residues.length + 1,
+      segmentIndex: segments.length + 1,
+      segmentPosition: currentSegmentResidues.length + 1
+    };
+
+    residues.push(residue);
+    currentSegmentResidues.push(residue);
+
+    currentResidue = null;
+  }
+
+  function finishCurrentSegment() {
+
+    finishCurrentResidue();
+
+    if (currentSegmentResidues.length === 0) return;
+
+    segments.push({
+      index: segments.length + 1,
+      residues: currentSegmentResidues,
+      sequence: currentSegmentResidues
+        .map(residue => residue.oneLetter)
+        .join("")
+    });
+
+    currentSegmentResidues = [];
+  }
+
+  for (const atom of atoms) {
+
+    const residueName =
+      String(atom.residueName || "").trim().toUpperCase();
+
+    const oneLetter = EPATH_GRO_AMINO_ACIDS[residueName];
+
+    // Esclude residui non riconosciuti come amminoacidi
+    if (!oneLetter) {
+      finishCurrentSegment();
+      continue;
+    }
+
+    // Verifica se è iniziato un nuovo residuo
+    if (
+      !currentResidue ||
+      currentResidue.residueNumber !== atom.residueNumber ||
+      currentResidue.residueName !== residueName
+    ) {
+
+      finishCurrentResidue();
+
+      currentResidue = {
+        residueNumber: atom.residueNumber,
+        residueName: residueName,
+        oneLetter: oneLetter,
+        atoms: []
+      };
+    }
+
+    // Conserva tutti gli atomi e le coordinate originali
+    currentResidue.atoms.push(atom);
+  }
+
+  finishCurrentSegment();
+
+  return {
+    residues: residues,
+    segments: segments
+  };
+}
+
+
+// Aggiorna la rappresentazione proteica
+function updateEPATHProteinRepresentation(atoms) {
+
+  if (
+    !epathProteinSummaryElement ||
+    !epathProteinSequenceElement
+  ) return;
+
+  const result = buildEPATHProteinRepresentation(atoms);
+
+  epathProteinResidues = result.residues;
+  epathProteinSegments = result.segments;
+
+  epathProteinSequence = result.segments
+    .map(segment => segment.sequence)
+    .join("\n");
+
+  if (epathProteinResidues.length === 0) {
+
+    epathProteinSummaryElement.textContent =
+      "No recognized amino-acid residues found.";
+
+    epathProteinSequenceElement.value = "";
+
+    return;
+  }
+
+  epathProteinSummaryElement.textContent =
+    `${epathProteinResidues.length} amino-acid residues recognized — ` +
+    `${epathProteinSegments.length} contiguous segment(s).`;
+
+  epathProteinSequenceElement.value = epathProteinSequence;
+
+  console.log("EPATH protein sequence:", epathProteinSequence);
+  console.log("EPATH protein residues:", epathProteinResidues);
+}
+
