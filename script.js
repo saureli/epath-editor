@@ -915,6 +915,8 @@ if (groFileInput && groStatus) {
 
       epathGroAtoms = structure.atoms;
 
+      updateEPATHProteinRepresentation(epathGroAtoms);
+
       groStatus.textContent =
         `${file.name} — ${epathGroAtoms.length} atoms loaded`;
 
@@ -922,6 +924,7 @@ if (groFileInput && groStatus) {
 
     } catch (error) {
       epathGroAtoms = [];
+      updateEPATHProteinRepresentation([]);
       groStatus.textContent = `Error: ${error.message}`;
       console.error(error);
     }
