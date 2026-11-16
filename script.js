@@ -840,3 +840,90 @@ plumedBtn.addEventListener(
   "click",
   downloadPLUMED
 );
+
+
+// =====================================================
+// READ GRO STRUCTURE
+// =====================================================
+
+const groFileInput = document.getElementById("groFile");
+const groStatus = document.getElementById("groStatus");
+
+// Contiene gli atomi della struttura caricata
+let epathGroAtoms = [];
+
+function parseEPATHGroFile(content) {
+  const lines = content.replace(/\r/g, "").trimEnd().split("\n");
+
+  if (lines.length < 3) {
+    throw new Error("File GRO troppo corto.");
+  }
+
+  const atomCount = Number.parseInt(lines[1].trim(), 10);
+
+  if (!Number.isInteger(atomCount) || atomCount <= 0) {
+    throw new Error("Numero di atomi non valido.");
+  }
+
+  if (lines.length < atomCount + 3) {
+    throw new Error("Il file non contiene tutte le righe degli atomi.");
+  }
+
+  const atoms = [];
+
+  for (let i = 0; i < atomCount; i++) {
+    const line = lines[i + 2];
+
+    if (line.length < 44) {
+      throw new Error(`Riga dell'atomo ${i + 1} non valida.`);
+    }
+
+    const atom = {
+      residueNumber: Number.parseInt(line.slice(0, 5).trim(), 10),
+      residueName: line.slice(5, 10).trim(),
+      atomName: line.slice(10, 15).trim(),
+      atomNumber: Number.parseInt(line.slice(15, 20).trim(), 10),
+      x: Number(line.slice(20, 28).trim()),
+      y: Number(line.slice(28, 36).trim()),
+      z: Number(line.slice(36, 44).trim())
+    };
+
+    if (![atom.x, atom.y, atom.z].every(Number.isFinite)) {
+      throw new Error(`Coordinate non valide alla riga ${i + 1}.`);
+    }
+
+    atoms.push(atom);
+  }
+
+  return {
+    title: lines[0],
+    atoms: atoms
+  };
+}
+
+if (groFileInput && groStatus) {
+  groFileInput.addEventListener("change", async () => {
+    const file = groFileInput.files[0];
+
+    if (!file) return;
+
+    groStatus.textContent = "Reading structure...";
+
+    try {
+      const content = await file.text();
+      const structure = parseEPATHGroFile(content);
+
+      epathGroAtoms = structure.atoms;
+
+      groStatus.textContent =
+        `${file.name} — ${epathGroAtoms.length} atoms loaded`;
+
+      console.log("GRO structure:", structure);
+
+    } catch (error) {
+      epathGroAtoms = [];
+      groStatus.textContent = `Error: ${error.message}`;
+      console.error(error);
+    }
+  });
+}
