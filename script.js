@@ -1089,6 +1089,8 @@ function updateEPATHProteinRepresentation(atoms) {
   epathProteinResidues = result.residues;
   epathProteinSegments = result.segments;
 
+  renderEPATHProteinResidueTable(epathProteinResidues);
+
   epathProteinSequence = result.segments
     .map(segment => segment.sequence)
     .join("\n");
@@ -1113,3 +1115,102 @@ function updateEPATHProteinRepresentation(atoms) {
   console.log("EPATH protein residues:", epathProteinResidues);
 }
 
+// =====================================================
+// EPATH PROTEIN RESIDUE TABLE
+// =====================================================
+
+const epathProteinResidueTableElement =
+  document.getElementById("proteinResidueTable");
+
+
+function renderEPATHProteinResidueTable(residues) {
+
+  if (!epathProteinResidueTableElement) return;
+
+  // Messaggio se non ci sono residui
+  if (!residues || residues.length === 0) {
+    epathProteinResidueTableElement.textContent =
+      "No protein residues to display.";
+    return;
+  }
+
+  // Contenitore con scorrimento verticale
+  const wrapper = document.createElement("div");
+
+  wrapper.style.maxHeight = "350px";
+  wrapper.style.overflowY = "auto";
+  wrapper.style.border = "1px solid #ddd";
+  wrapper.style.borderRadius = "8px";
+
+  // Creazione tabella
+  const table = document.createElement("table");
+
+  table.style.width = "100%";
+  table.style.borderCollapse = "collapse";
+  table.style.fontSize = "13px";
+
+  // Intestazione
+  const thead = document.createElement("thead");
+  const headerRow = document.createElement("tr");
+
+  const headers = [
+    "Position",
+    "GRO number",
+    "Residue",
+    "Code",
+    "Atoms"
+  ];
+
+  headers.forEach(label => {
+
+    const th = document.createElement("th");
+
+    th.textContent = label;
+    th.style.padding = "9px 7px";
+    th.style.textAlign = "left";
+    th.style.position = "sticky";
+    th.style.top = "0";
+    th.style.background = "#f2f2f2";
+    th.style.borderBottom = "1px solid #ccc";
+
+    headerRow.appendChild(th);
+  });
+
+  thead.appendChild(headerRow);
+  table.appendChild(thead);
+
+  // Corpo della tabella
+  const tbody = document.createElement("tbody");
+
+  residues.forEach(residue => {
+
+    const row = document.createElement("tr");
+
+    const values = [
+      residue.sequencePosition,
+      residue.residueNumber,
+      residue.residueName,
+      residue.oneLetter,
+      residue.atoms.length
+    ];
+
+    values.forEach(value => {
+
+      const td = document.createElement("td");
+
+      td.textContent = String(value);
+      td.style.padding = "7px";
+      td.style.borderBottom = "1px solid #eee";
+
+      row.appendChild(td);
+    });
+
+    tbody.appendChild(row);
+  });
+
+  table.appendChild(tbody);
+  wrapper.appendChild(table);
+
+  // Aggiorna il contenitore HTML
+  epathProteinResidueTableElement.replaceChildren(wrapper);
+}
