@@ -1127,6 +1127,178 @@ const epathProteinResidueTableElement =
 const selectedEPATHResidues = new Set();
 // Atomi selezionati per ciascun residuo
 const selectedEPATHAtoms = new Map();
+// Distanze selezionate manualmente
+const selectedEPATHDistances = new Set();
+
+// =====================================================
+// EPATH DISTANCE SELECTION
+// =====================================================
+
+function updateEPATHDistanceSelection() {
+
+  if (!epathDistanceSelectionElement) return;
+
+  // Recupera i residui selezionati che hanno almeno
+  // un atomo selezionato
+  const centers = epathProteinResidues
+    .filter(residue =>
+      selectedEPATHResidues.has(residue.sequencePosition)
+    )
+    .filter(residue => {
+      const atoms = selectedEPATHAtoms.get(
+        residue.sequencePosition
+      );
+
+      return atoms && atoms.size > 0;
+    })
+    .map(residue => ({
+      position: residue.sequencePosition,
+      residueNumber: residue.residueNumber,
+      name: `SC${residue.residueNumber}`
+    }));
+
+  epathDistanceSelectionElement.replaceChildren();
+
+  // Servono almeno due centri per definire una distanza
+  if (centers.length < 2) {
+
+    epathDistanceSelectionElement.textContent =
+      "Select at least two residues and their atoms.";
+
+    selectedEPATHDistances.clear();
+
+    return;
+  }
+
+  // Genera tutte le coppie possibili
+  const pairs = [];
+
+  for (let i = 0; i < centers.length; i++) {
+
+    for (let j = i + 1; j < centers.length; j++) {
+
+      const first = centers[i];
+      const second = centers[j];
+
+      pairs.push({
+        key: `${first.position}-${second.position}`,
+        distanceName:
+          `d${first.residueNumber}-${second.residueNumber}`,
+        firstName: first.name,
+        secondName: second.name
+      });
+    }
+  }
+
+  // Elimina le distanze che non sono più disponibili
+  const availableKeys = new Set(
+    pairs.map(pair => pair.key)
+  );
+
+  for (const key of selectedEPATHDistances) {
+
+    if (!availableKeys.has(key)) {
+      selectedEPATHDistances.delete(key);
+    }
+  }
+
+  // Pulsanti per selezionare tutte o nessuna coppia
+  const buttonsContainer = document.createElement("div");
+
+  buttonsContainer.style.display = "flex";
+  buttonsContainer.style.gap = "8px";
+  buttonsContainer.style.marginBottom = "12px";
+
+  const selectAllButton = document.createElement("button");
+
+  selectAllButton.type = "button";
+  selectAllButton.textContent = "Select all pairs";
+
+  selectAllButton.addEventListener("click", () => {
+
+    pairs.forEach(pair => {
+      selectedEPATHDistances.add(pair.key);
+    });
+
+    updateEPATHDistanceSelection();
+  });
+
+  const clearButton = document.createElement("button");
+
+  clearButton.type = "button";
+  clearButton.textContent = "Clear selection";
+
+  clearButton.addEventListener("click", () => {
+
+    selectedEPATHDistances.clear();
+
+    updateEPATHDistanceSelection();
+  });
+
+  buttonsContainer.appendChild(selectAllButton);
+  buttonsContainer.appendChild(clearButton);
+
+  epathDistanceSelectionElement.appendChild(buttonsContainer);
+
+  // Elenco delle coppie disponibili
+  const pairList = document.createElement("div");
+
+  pairs.forEach(pair => {
+
+    const label = document.createElement("label");
+
+    label.style.display = "flex";
+    label.style.alignItems = "center";
+    label.style.gap = "8px";
+    label.style.marginBottom = "8px";
+    label.style.cursor = "pointer";
+
+    const checkbox = document.createElement("input");
+
+    checkbox.type = "checkbox";
+    checkbox.checked =
+      selectedEPATHDistances.has(pair.key);
+
+    checkbox.addEventListener("change", () => {
+
+      if (checkbox.checked) {
+        selectedEPATHDistances.add(pair.key);
+      } else {
+        selectedEPATHDistances.delete(pair.key);
+      }
+
+      selectionCount.textContent =
+        `${selectedEPATHDistances.size} distance(s) selected.`;
+    });
+
+    const description = document.createElement("span");
+
+    description.textContent =
+      `${pair.distanceName}: ${pair.firstName} – ${pair.secondName}`;
+
+    label.appendChild(checkbox);
+    label.appendChild(description);
+
+    pairList.appendChild(label);
+  });
+
+  epathDistanceSelectionElement.appendChild(pairList);
+
+  // Numero di distanze selezionate
+  const selectionCount = document.createElement("div");
+
+  selectionCount.style.marginTop = "10px";
+  selectionCount.style.fontSize = "13px";
+
+  selectionCount.textContent =
+    `${selectedEPATHDistances.size} distance(s) selected.`;
+
+  epathDistanceSelectionElement.appendChild(selectionCount);
+}
+
+// Contenitore HTML delle distanze
+const epathDistanceSelectionElement =
+  document.getElementById("epathDistanceSelection");
 
 const epathSelectedResiduesElement =
   document.getElementById("selectedResidues");
@@ -1199,6 +1371,7 @@ function updateEPATHSelectedResidues() {
           `Selected atoms for ${residue.residueName} ${residue.residueNumber}:`,
           Array.from(selectedAtoms)
         );
+        updateEPATHDistanceSelection();
       });
 
       label.appendChild(checkbox);
@@ -1336,6 +1509,7 @@ function renderEPATHProteinResidueTable(residues) {
         )
       );
       updateEPATHSelectedResidues();
+      updateEPATHDistanceSelection();
     });
     
     const values = [
