@@ -1123,6 +1123,8 @@ function updateEPATHProteinRepresentation(atoms) {
 const epathProteinResidueTableElement =
   document.getElementById("proteinResidueTable");
 
+// Residui selezionati nella tabella
+const selectedEPATHResidues = new Set();
 
 function renderEPATHProteinResidueTable(residues) {
 
@@ -1185,7 +1187,35 @@ function renderEPATHProteinResidueTable(residues) {
   residues.forEach(residue => {
 
     const row = document.createElement("tr");
+    // La riga è cliccabile
+    row.style.cursor = "pointer";
 
+    // Mantiene evidenziati i residui già selezionati
+    if (selectedEPATHResidues.has(residue.sequencePosition)) {
+      row.style.backgroundColor = "#dbeafe";
+    }
+
+    // Seleziona o deseleziona il residuo
+    row.addEventListener("click", () => {
+
+      const position = residue.sequencePosition;
+
+      if (selectedEPATHResidues.has(position)) {
+        selectedEPATHResidues.delete(position);
+        row.style.backgroundColor = "";
+      } else {
+        selectedEPATHResidues.add(position);
+        row.style.backgroundColor = "#dbeafe";
+      }
+
+      console.log(
+        "Selected residues:",
+        epathProteinResidues.filter(r =>
+          selectedEPATHResidues.has(r.sequencePosition)
+        )
+      );
+    });
+    
     const values = [
       residue.sequencePosition,
       residue.residueNumber,
