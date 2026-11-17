@@ -1126,6 +1126,39 @@ const epathProteinResidueTableElement =
 // Residui selezionati nella tabella
 const selectedEPATHResidues = new Set();
 
+const epathSelectedResiduesElement =
+  document.getElementById("selectedResidues");
+
+
+function updateEPATHSelectedResidues() {
+
+  if (!epathSelectedResiduesElement) return;
+
+  const selectedResidues = epathProteinResidues.filter(
+    residue => selectedEPATHResidues.has(residue.sequencePosition)
+  );
+
+  if (selectedResidues.length === 0) {
+    epathSelectedResiduesElement.textContent =
+      "No residues selected.";
+    return;
+  }
+
+  const lines = selectedResidues.map(residue => {
+
+    const atoms = residue.atoms.map(atom =>
+      `${atom.atomName} [${atom.fileIndex}]`
+    ).join(", ");
+
+    return `${residue.residueName} ${residue.residueNumber}\n${atoms}`;
+  });
+
+  epathSelectedResiduesElement.textContent =
+    lines.join("\n\n");
+
+  epathSelectedResiduesElement.style.whiteSpace = "pre-wrap";
+}
+
 function renderEPATHProteinResidueTable(residues) {
 
   if (!epathProteinResidueTableElement) return;
@@ -1214,6 +1247,7 @@ function renderEPATHProteinResidueTable(residues) {
           selectedEPATHResidues.has(r.sequencePosition)
         )
       );
+      updateEPATHSelectedResidues();
     });
     
     const values = [
