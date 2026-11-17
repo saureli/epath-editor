@@ -883,6 +883,7 @@ function parseEPATHGroFile(content) {
       residueName: line.slice(5, 10).trim(),
       atomName: line.slice(10, 15).trim(),
       atomNumber: Number.parseInt(line.slice(15, 20).trim(), 10),
+      fileIndex: i + 1,
       x: Number(line.slice(20, 28).trim()),
       y: Number(line.slice(28, 36).trim()),
       z: Number(line.slice(36, 44).trim())
@@ -1157,8 +1158,7 @@ function renderEPATHProteinResidueTable(residues) {
     "Position",
     "GRO number",
     "Residue",
-    "Code",
-    "Atoms"
+    "Serial"
   ];
 
   headers.forEach(label => {
@@ -1190,8 +1190,7 @@ function renderEPATHProteinResidueTable(residues) {
       residue.sequencePosition,
       residue.residueNumber,
       residue.residueName,
-      residue.oneLetter,
-      residue.atoms.length
+      residue.atoms.map(atom => atom.fileIndex).join(", ")
     ];
 
     values.forEach(value => {
