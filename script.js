@@ -1125,10 +1125,11 @@ const epathProteinResidueTableElement =
 
 // Residui selezionati nella tabella
 const selectedEPATHResidues = new Set();
+// Atomi selezionati per ciascun residuo
+const selectedEPATHAtoms = new Map();
 
 const epathSelectedResiduesElement =
   document.getElementById("selectedResidues");
-
 
 function updateEPATHSelectedResidues() {
 
@@ -1138,26 +1139,113 @@ function updateEPATHSelectedResidues() {
     residue => selectedEPATHResidues.has(residue.sequencePosition)
   );
 
+  epathSelectedResiduesElement.replaceChildren();
+
   if (selectedResidues.length === 0) {
     epathSelectedResiduesElement.textContent =
       "No residues selected.";
     return;
   }
 
-  const lines = selectedResidues.map(residue => {
+  selectedResidues.forEach(residue => {
 
-    const atoms = residue.atoms.map(atom =>
-      `${atom.atomName} [${atom.fileIndex}]`
-    ).join(", ");
+    const residueBlock = document.createElement("div");
+    residueBlock.style.marginBottom = "14px";
 
-    return `${residue.residueName} ${residue.residueNumber}\n${atoms}`;
+    const title = document.createElement("strong");
+    title.textContent =
+      `${residue.residueName} ${residue.residueNumber}`;
+
+    residueBlock.appendChild(title);
+
+    const atomList = document.createElement("div");
+    atomList.style.display = "flex";
+    atomList.style.flexWrap = "wrap";
+    atomList.style.gap = "8px";
+    atomList.style.marginTop = "8px";
+
+    // Recupera gli atomi già selezionati
+    if (!selectedEPATHAtoms.has(residue.sequencePosition)) {
+      selectedEPATHAtoms.set(residue.sequencePosition, new Set());
+    }
+
+    const selectedAtoms =
+      selectedEPATHAtoms.get(residue.sequencePosition);
+
+    residue.atoms.forEach(atom => {
+
+      const label = document.createElement("label");
+
+      label.style.display = "inline-flex";
+      label.style.alignItems = "center";
+      label.style.gap = "4px";
+      label.style.fontSize = "13px";
+      label.style.cursor = "pointer";
+
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+
+      checkbox.checked = selectedAtoms.has(atom.fileIndex);
+
+      checkbox.addEventListener("change", () => {
+
+        if (checkbox.checked) {
+          selectedAtoms.add(atom.fileIndex);
+        } else {
+          selectedAtoms.delete(atom.fileIndex);
+        }
+
+        console.log(
+          `Selected atoms for ${residue.residueName} ${residue.residueNumber}:`,
+          Array.from(selectedAtoms)
+        );
+      });
+
+      label.appendChild(checkbox);
+
+      label.appendChild(
+        document.createTextNode(
+          `${atom.atomName} [${atom.fileIndex}]`
+        )
+      );
+
+      atomList.appendChild(label);
+    });
+
+    residueBlock.appendChild(atomList);
+
+    epathSelectedResiduesElement.appendChild(residueBlock);
   });
-
-  epathSelectedResiduesElement.textContent =
-    lines.join("\n\n");
-
-  epathSelectedResiduesElement.style.whiteSpace = "pre-wrap";
 }
+
+//function updateEPATHSelectedResidues() {
+
+//  if (!epathSelectedResiduesElement) return;
+
+//  const selectedResidues = epathProteinResidues.filter(
+//    residue => selectedEPATHResidues.has(residue.sequencePosition)
+//  );
+
+//  if (selectedResidues.length === 0) {
+//    epathSelectedResiduesElement.textContent =
+//      "No residues selected.";
+//    return;
+//  }
+
+//  const lines = selectedResidues.map(residue => {
+
+//    const atoms = residue.atoms.map(atom =>
+//      `${atom.atomName} [${atom.fileIndex}]`
+//    ).join(", ");
+
+//    return `${residue.residueName} ${residue.residueNumber}\n${atoms}`;
+//  });
+
+//  epathSelectedResiduesElement.textContent =
+//    lines.join("\n\n");
+
+//  epathSelectedResiduesElement.style.whiteSpace = "pre-wrap";
+//}
 
 function renderEPATHProteinResidueTable(residues) {
 
